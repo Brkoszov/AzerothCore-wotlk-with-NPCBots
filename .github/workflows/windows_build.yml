@@ -143,3 +143,36 @@ jobs:
         run: |
           export CTOOLS_BUILD=all
           ./acore.sh compiler build
+                - name: Archive Windows build
+        if: always()
+        shell: pwsh
+        run: |
+          $workspace = $env:GITHUB_WORKSPACE
+          $artifactDir = Join-Path $workspace 'artifact-upload'
+          New-Item -ItemType Directory -Path $artifactDir -Force | Out-Null
+
+          $archivePath = Join-Path $artifactDir 'windows-build.zip'
+          $pathsToArchive = @(
+            (Join-Path $workspace 'build'),
+            (Join-Path $workspace 'bin'),
+            (Join-Path $workspace 'build\bin'),
+            (Join-Path $workspace 'src\server'),
+            (Join-Path $workspace 'bin\Release')
+          ) | Where-Object { $_ -and (Test-Path $_) }
+
+          if (-not $pathsToArchive)
+          {
+            throw 'No build output was found to archive. Check the build output directories.'
+          }
+
+          Compress-Archive -Path $pathsToArchive -DestinationPath $archivePath -Force
+          Write-Host "Archive created: $archivePath"
+
+      - name: Upload build artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-build-${{ github.run_id }}
+          path: ${{ github.workspace }}/artifact-upload/windows-build.zip
+          if-no-files-found: error
+          retention-days: 7
