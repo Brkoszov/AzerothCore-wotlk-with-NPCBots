@@ -1,4 +1,4 @@
-name: Brkos windows-build2
+name: Brkos Windows build2
 on:
   workflow_dispatch:
 
